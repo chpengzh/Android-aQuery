@@ -5,6 +5,14 @@ For more detail see www.aquery.org
 
 ```
 dependencies {
-    compile 'org.aquery.core:aQuery:1.0.0'
+    compile 'org.aquery.core:aQuery:LATEST-VERSION'
 }
 ```
+
+## Change Log:
+
+### v1.0.0 
+
+Date: 2016-02-04
+
+Comment: init commit with minimum requirement about Android http request and log tracer
