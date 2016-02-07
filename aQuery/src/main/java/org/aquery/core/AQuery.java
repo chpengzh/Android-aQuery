@@ -180,7 +180,6 @@ public abstract class AQuery {
      *
      * @param checker checker instance
      * @return whether it has any warning message
-     * @throws IllegalDataError data is illegal
      */
     public abstract boolean validate(Checker checker) throws IllegalDataError;
 

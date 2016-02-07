@@ -102,7 +102,6 @@ public abstract class Validator {
      * check a validator follow its validate condition principles
      *
      * @return whether it has any validate warning
-     * @throws IllegalDataError validate data fail
      */
     public abstract boolean validate() throws IllegalDataError;
 
