@@ -7,6 +7,7 @@ import com.android.volley.Request;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.Volley;
 import com.google.gson.Gson;
 
 import org.aquery.core.annotation.method.Handler;
@@ -14,70 +15,103 @@ import org.aquery.core.annotation.method.Validator;
 import org.aquery.core.annotation.param.*;
 import org.aquery.core.annotation.param.Method;
 import org.aquery.core.api.Ajax;
+import org.aquery.core.api.Checker;
+import org.aquery.core.exception.IllegalDataError;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Ajax Request handler function
  * Support Annotation method:
  * - Handler.class for user define action handler
- * - Validator.class for response validate handler
+ * - Checker.class for response getValidator handler
  *
  * @author chpengzh chpengzh@foxmail.com
  */
 public class Function {
 
-    public void callHandler(AQuery $, Ajax ajax) {
-        for (java.lang.reflect.Method method : getClass().getMethods()) {
-            if (method.isAnnotationPresent(Handler.class)) {
-                Object[] params = new Object[method.getParameterTypes().length];
-                iterate($, ajax, method, params);
-                try {
-                    method.invoke(this, params);
-                } catch (Exception e) {
-                    $.log.e(e);
-                }
-                break;
-            }
-        }
-    }
-
-    public void callValidator(AQuery $, Ajax ajax) throws VolleyError {
-        for (java.lang.reflect.Method method : getClass().getMethods()) {
-            if (method.isAnnotationPresent(Validator.class)) {
-                Object[] params = new Object[method.getParameterTypes().length];
-                iterate($, ajax, method, params);
-                try {
-                    method.invoke(this, params);
-                } catch (InvocationTargetException e) {
-                    $.log.e(e.getTargetException());
-                    if (e.getTargetException() instanceof VolleyError) {
-                        throw (VolleyError) e.getTargetException();
-                    }
-                } catch (Exception e) {
-                    $.log.e(e);
-                }
-                break;
-            }
-        }
-    }
-
-    private void iterate(AQuery $, Ajax ajax, java.lang.reflect.Method method, Object[] params) {
-        for (int i = 0; i < params.length; i++) {
-            Annotation[] annotations = method.getParameterAnnotations()[i];
+    public void callHandler(final AQuery $, final Ajax ajax) {
+        Map<Annotation, java.lang.reflect.Method> method = ReflectUtils
+                .getMethodsByAnnotation(Handler.class, getClass());
+        for (Map.Entry<Annotation, java.lang.reflect.Method> entry : method.entrySet()) {
             try {
-                for (Annotation annotation : annotations) {
-                    Object inject = scanAnnotation($, method.getParameterTypes()[i],
-                            annotation, ajax);
-                    if (inject != null) {
-                        params[i] = inject;
-                        break;
+                entry.getValue().invoke(this, ReflectUtils.fillParamsByAnnotations(entry.getValue(),
+                        new ReflectUtils.ParamInjector() {
+                            @Override
+                            public Object onInject(Class paramType, List<? extends Annotation> annotations,
+                                                   int position) {
+                                try {
+                                    return scanAnnotation($, paramType, annotations.get(0), ajax);
+                                } catch (Exception e) {
+                                    return null;
+                                }
+                            }
+                        }));
+            } catch (Exception e) {
+                $.log.i(e);
+            }
+        }
+    }
+
+    public void callValidator(final AQuery $, final Ajax ajax) throws VolleyError {
+        Map<Annotation, java.lang.reflect.Method> method = ReflectUtils
+                .getMethodsByAnnotation(Handler.class, getClass());
+        for (Map.Entry<Annotation, java.lang.reflect.Method> entry : method.entrySet()) {
+            try {
+                entry.getValue().invoke(this, ReflectUtils.fillParamsByAnnotations(entry.getValue(),
+                        new ReflectUtils.ParamInjector() {
+                            @Override
+                            public Object onInject(Class paramType, List<? extends Annotation> annotations,
+                                                   int position) {
+                                try {
+                                    return scanAnnotation($, paramType, annotations.get(0), ajax);
+                                } catch (Exception e) {
+                                    $.log.i(e);
+                                    return null;
+                                }
+                            }
+                        }));
+            } catch (InvocationTargetException e) {
+                if (e.getTargetException() instanceof VolleyError) {
+                    throw ((VolleyError) e.getTargetException());
+                }
+                $.log.i(e.getTargetException());
+            } catch (Exception e) {
+                $.log.i(e);
+            }
+        }
+    }
+
+    public void callModelValidator(final AQuery $, final Ajax ajax) throws VolleyError {
+        Map<Annotation, java.lang.reflect.Method> methodMap = ReflectUtils
+                .getMethodsByAnnotation(Handler.class, getClass());
+        for (Map.Entry<Annotation, java.lang.reflect.Method> entry : methodMap.entrySet()) {
+            java.lang.reflect.Method method = entry.getValue();
+            for (int i = 0; i < method.getParameterTypes().length; i++) {
+                Class type = method.getParameterTypes()[i];
+                if (method.getParameterAnnotations()[i][0] instanceof ResponseBody &&
+                        type != String.class && type != byte[].class &&
+                        Checker.class.isAssignableFrom(type)) {
+                    try {
+                        Checker checker = (Checker) new Gson()
+                                .fromJson(new String(ajax.getResponseBody(), "utf-8"), type);
+                        if (checker.getValidator().validate()) {
+                            $.log.i("has warning");
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        $.log.i(e);
+                        throw new IllegalDataError("Unsupported encoding bytes");
                     }
                 }
-            } catch (Exception e) {
-                $.log.e(e);
-                params[i] = null;
             }
         }
     }
@@ -124,7 +158,7 @@ public class Function {
                 return new Gson().fromJson(new String(src, "utf-8"), type);
             }
         } catch (Exception e) {
-            $.log.e(e);
+            $.log.i(e);
             return null;
         }
     }

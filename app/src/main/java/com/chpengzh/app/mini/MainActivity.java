@@ -37,10 +37,9 @@ public class MainActivity extends Activity {
     void login() {
         final String uid = usernameInput.getText().toString();
         final String password = pwInput.getText().toString();
-        $.post("/api/v1/login")
+        $.post("/login")
                 .body($.dict().with("name", uid).with("password", password))
-                .param("user", "陈鹏志")
-                .header("X-Auth", "ahifadf")
+                .param("encrypt", "False")
                 .start(new Function() {
                     @Handler
                     public void start() {
@@ -49,8 +48,8 @@ public class MainActivity extends Activity {
                 })
                 .done(new Function() {
                     @Handler
-                    public void done(@ResponseBody Map<String, String> resp) {
-                        $.alert("Login success, user token = %s", resp.get("token"));
+                    public void done(@ResponseBody LoginResponse resp) {
+                        $.alert("Login success, user token = %s", resp.token);
                     }
                 })
                 .fail(new Function() {

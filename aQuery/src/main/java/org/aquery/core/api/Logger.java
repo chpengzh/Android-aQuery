@@ -21,7 +21,7 @@ public interface Logger {
      *
      * @param e error as Throwable
      */
-    void d(Throwable e);
+    void d(Object e);
 
     /***
      * info log
@@ -35,7 +35,7 @@ public interface Logger {
      *
      * @param e error as Throwable
      */
-    void i(Throwable e);
+    void i(Object e);
 
     /***
      * error log
@@ -49,7 +49,7 @@ public interface Logger {
      *
      * @param e message as Throwable
      */
-    void e(Throwable e);
+    void e(Object e);
 
     class Impl implements Logger {
 
@@ -79,19 +79,23 @@ public interface Logger {
             if ($.config.DEBUG_LOG) {
                 String tag = getTag();
                 for (String line : (args.length == 0 ? s : String.format(s, args)).split("\\n")) {
-                    Log.d(tag, line.trim());
+                    Log.d(tag, line);
                 }
             }
         }
 
         @Override
-        synchronized public void d(Throwable e) {
-            if ($.config.DEBUG_LOG && e != null) {
-                String tag = getTag();
-                Log.d(tag, e.toString());
-                for (StackTraceElement element : e.getStackTrace()) {
-                    Log.d(tag, element.toString());
+        synchronized public void d(Object e) {
+            String tag = getTag();
+            if (e != null && e instanceof Throwable) {
+                if ($.config.DEBUG_LOG) {
+                    Log.d(tag, e.toString());
+                    for (StackTraceElement element : ((Throwable) e).getStackTrace()) {
+                        Log.d(tag, element.toString());
+                    }
                 }
+            } else {
+                Log.d(tag, String.valueOf(e));
             }
         }
 
@@ -100,19 +104,23 @@ public interface Logger {
             if (s == null || s.trim().length() == 0) return;
             if ($.config.DEBUG_LOG) {
                 for (String line : (args.length == 0 ? s : String.format(s, args)).split("\\n")) {
-                    Log.i(getTag(), line.trim());
+                    Log.i(getTag(), line);
                 }
             }
         }
 
         @Override
-        synchronized public void i(Throwable e) {
-            if ($.config.DEBUG_LOG && e != null) {
-                String tag = getTag();
-                Log.i(tag, e.toString());
-                for (StackTraceElement element : e.getStackTrace()) {
-                    Log.i(tag, element.toString());
+        synchronized public void i(Object e) {
+            String tag = getTag();
+            if (e != null && e instanceof Throwable) {
+                if ($.config.DEBUG_LOG) {
+                    Log.i(tag, e.toString());
+                    for (StackTraceElement element : ((Throwable) e).getStackTrace()) {
+                        Log.i(tag, element.toString());
+                    }
                 }
+            } else {
+                Log.i(tag, String.valueOf(e));
             }
         }
 
@@ -121,19 +129,23 @@ public interface Logger {
             if (s == null || s.trim().length() == 0) return;
             if ($.config.DEBUG_LOG) {
                 for (String line : (args.length == 0 ? s : String.format(s, args)).split("\\n")) {
-                    Log.e(getTag(), line.trim());
+                    Log.e(getTag(), line);
                 }
             }
         }
 
         @Override
-        synchronized public void e(Throwable e) {
-            if ($.config.DEBUG_LOG && e != null) {
-                String tag = getTag();
-                Log.e(tag, e.toString());
-                for (StackTraceElement element : e.getStackTrace()) {
-                    Log.e(tag, element.toString());
+        synchronized public void e(Object e) {
+            String tag = getTag();
+            if (e != null && e instanceof Throwable) {
+                if ($.config.DEBUG_LOG) {
+                    Log.e(tag, e.toString());
+                    for (StackTraceElement element : ((Throwable) e).getStackTrace()) {
+                        Log.e(tag, element.toString());
+                    }
                 }
+            } else {
+                Log.e(tag, String.valueOf(e));
             }
         }
     }

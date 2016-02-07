@@ -206,7 +206,7 @@ public interface Ajax {
             try {
                 mQueryParam.put(key, URLEncoder.encode(value, "utf-8"));
             } catch (UnsupportedEncodingException e) {
-                $.log.e(e);
+                $.log.i(e);
             }
             return this;
         }
@@ -323,15 +323,20 @@ public interface Ajax {
         @Override
         public String toString() {
             try {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder headers = new StringBuilder();
                 for (Map.Entry<String, String> entry : mHeaders.entrySet()) {
-                    sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                    headers.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
                 }
-                return String.format("[url]%s\n[method]%s\n[header]\n%s[body]\n%s\n",
-                        mURL, mMethod == Request.Method.GET ? "GET" : "POST", sb.toString(),
-                        new String(mReqBody == null ? "<null data>".getBytes() : mReqBody, "utf-8"));
+                StringBuilder params = new StringBuilder();
+                for (Map.Entry<String, String> entry : mQueryParam.entrySet()) {
+                    params.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                }
+                return String.format("[url]%s\n[method]%s\n[param]\n%s[header]\n%s[body]\n%s\n",
+                        mURL, mMethod == Request.Method.GET ? "GET" : "POST", params.toString(),
+                        headers.toString(), new String(mReqBody == null ? "<null data>".getBytes() :
+                                mReqBody, "utf-8"));
             } catch (UnsupportedEncodingException e) {
-                $.log.e(e);
+                $.log.i(e);
                 return super.toString();
             }
         }
@@ -341,6 +346,7 @@ public interface Ajax {
                 super(mMethod, mURL, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
+                        mError = error;
                         getHandler(_FAIL).callHandler($, Impl.this);
                         getHandler(FAIL).callHandler($, Impl.this);
                         //----
@@ -382,6 +388,7 @@ public interface Ajax {
                 try {
                     mResponseByte = response.data;
                     getHandler(VALIDATE).callValidator($, Impl.this);
+                    getHandler(DONE).callModelValidator($, Impl.this);
                     return Response.success(response.data, parseCacheHeaders(response));
                 } catch (VolleyError error) {
                     return Response.error(error);

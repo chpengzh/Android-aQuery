@@ -13,8 +13,12 @@ import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 
 import org.aquery.core.api.Ajax;
+import org.aquery.core.api.Checker;
 import org.aquery.core.api.Dictionary;
 import org.aquery.core.api.Logger;
+import org.aquery.core.api.Reflector;
+import org.aquery.core.api.Validator;
+import org.aquery.core.exception.IllegalDataError;
 
 import java.io.File;
 
@@ -23,10 +27,14 @@ import java.io.File;
  */
 public abstract class AQuery {
 
-    /************************************************************************
-     * public member api
-     ***********************************************************************/
+    /***
+     * public config
+     */
     public Config config;
+
+    /***
+     * logger
+     */
     public Logger log;
 
     /************************************************************************
@@ -150,6 +158,32 @@ public abstract class AQuery {
      */
     public abstract void alert(String message, Object... args);
 
+    /***
+     * Reflect a object source
+     *
+     * @param src object to be reflected
+     * @return Reflector of an object
+     */
+    public abstract Reflector load(Object src);
+
+    /***
+     * Reflect a json with it's class type
+     *
+     * @param json json String
+     * @param type load type
+     * @return Reflector fo an object
+     */
+    public abstract Reflector loadJson(String json, Class type);
+
+    /***
+     * validate a checker follow its validate principles
+     *
+     * @param checker checker instance
+     * @return whether it has any warning message
+     * @throws IllegalDataError data is illegal
+     */
+    public abstract boolean validate(Checker checker) throws IllegalDataError;
+
     static class Impl extends AQuery {
 
         static AQuery sInstance;
@@ -261,6 +295,23 @@ public abstract class AQuery {
         public void alert(String message, Object... args) {
             Toast.makeText(mContext, args.length == 0 ? message : String.format(message, args),
                     Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public Reflector load(Object src) {
+            return new Reflector.Impl(this, src);
+        }
+
+        @Override
+        public Reflector loadJson(String json, Class type) {
+            return new Reflector.Impl(this, json, type);
+        }
+
+        @Override
+        public boolean validate(Checker checker) throws IllegalDataError {
+            if (checker == null) throw new IllegalDataError("null checker");
+            if (checker.getValidator() == null) throw new IllegalDataError("null validator");
+            return checker.getValidator().validate();
         }
     }
 }
