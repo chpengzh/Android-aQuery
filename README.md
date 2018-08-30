@@ -1,5 +1,5 @@
 # aQuery
-For more detail see [aQuery.org](http://www.aquery.org/what-is-aquery/) [API Doc](http://www.aquery.org/api-documentations/)
+For more detail see [aQuery.org](https://chpengzh/what-is-aquery/) [API Doc](https://chpengzh/api-documentations/)
 
 ## use Artifact from JCenter
 
